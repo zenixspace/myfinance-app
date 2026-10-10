@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyFinance</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  padding: 22px;
+  font-family: Arial, sans-serif;
+  background: #101820;
+  color: #ffffff;
+}
+h1 { margin-bottom: 6px; }
+.muted { color: #a9b5c0; }
+.balance {
+  background: #174735;
+  padding: 24px;
+  border-radius: 20px;
+  margin: 24px 0 16px;
+}
+.amount { font-size: 32px; font-weight: bold; margin: 12px 0; }
+.cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.card {
+  background: #202c36;
+  padding: 16px;
+  border-radius: 16px;
+}
+.number { font-size: 20px; font-weight: bold; margin-top: 12px; }
+.section { margin-top: 26px; }
+input, select, button {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  margin-top: 12px;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+}
+input, select { background: #202c36; color: white; }
+button {
+  background: #39c58b;
+  color: #10251b;
+  font-weight: bold;
+  cursor: pointer;
+}
+.operation {
+  padding: 12px 0;
+  border-bottom: 1px solid #35414a;
+}
+</style>
+</head>
+<body>
+<h1>MyFinance 💰</h1>
+<div class="muted">Твои финансы в одном месте</div>
+
+<div class="balance">
+  <div>Мой баланс</div>
+  <div class="amount" id="balance">0,00 ₽</div>
+  <div class="muted">Доходы минус расходы</div>
+</div>
+
+<div class="cards">
+  <div class="card">
+    📈 Доходы
+    <div class="number" id="income">0,00 ₽</div>
+  </div>
+  <div class="card">
+    📉 Расходы
+    <div class="number" id="expense">0,00 ₽</div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Добавить операцию</h3>
+  <select id="kind">
+    <option value="income">Доход</option>
+    <option value="expense">Расход</option>
+  </select>
+  <input id="amount" type="number" min="0.01" step="0.01"
+         placeholder="Сумма в рублях">
+  <input id="category" maxlength="50"
+         placeholder="Категория: например Еда">
+  <button id="save">Сохранить операцию</button>
+  <p class="muted" id="status"></p>
+</div>
+
+<div class="section">
+  <h3>Последние операции</h3>
+  <div id="history" class="muted">Операций пока нет</div>
+</div>
+
+<script>
+let operations = [];
+
+function money(n) {
+  return n.toLocaleString('ru-RU', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }) + ' ₽';
+}
+
+function render() {
+  const income = operations
+    .filter(o => o.kind === 'income')
+    .reduce((sum, o) => sum + o.amount, 0);
+
+  const expense = operations
+    .filter(o => o.kind === 'expense')
+    .reduce((sum, o) => sum + o.amount, 0);
+
+  document.getElementById('income').textContent = money(income);
+  document.getElementById('expense').textContent = money(expense);
+  document.getElementById('balance').textContent = money(income - expense);
+
+  const history = document.getElementById('history');
+  history.replaceChildren();
+
+  if (operations.length === 0) {
+    history.textContent = 'Операций пока нет';
+    return;
+  }
+
+  operations.slice().reverse().slice(0, 10).forEach(o => {
+    const item = document.createElement('div');
+    item.className = 'operation';
+    item.textContent =
+      (o.kind === 'income' ? '+ ' : '− ') +
+      money(o.amount) + ' · ' + o.category;
+    history.appendChild(item);
+  });
+}
+
+document.getElementById('save').addEventListener('click', () => {
+  const amount = Number(document.getElementById('amount').value);
+  const category = document.getElementById('category').value.trim();
+  const kind = document.getElementById('kind').value;
+  const status = document.getElementById('status');
+
+  if (!Number.isFinite(amount) || amount <= 0 || !category) {
+    status.textContent = 'Укажи сумму больше нуля и категорию.';
+    return;
+  }
+
+  operations.push({ amount, category, kind });
+  document.getElementById('amount').value = '';
+  document.getElementById('category').value = '';
+  status.textContent = 'Операция добавлена!';
+  render();
+});
+
+render();
+</script>
+</body>
+</html>
