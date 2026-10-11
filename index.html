@@ -208,6 +208,25 @@ async function resetAll() {
   }
 }
 
+async function resetAll() {
+  const confirmed = confirm("⚠️ Удалить ВСЕ операции? Это нельзя отменить.");
+  if (!confirmed) return;
+
+  try {
+    const res = await fetch(
+      `${API_URL}/reset/operations?user_id=${USER_ID}`,
+      { method: "POST", headers }
+    );
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "Ошибка");
+
+    loadData();
+    if (tg) tg.HapticFeedback?.notificationOccurred("warning");
+  } catch (e) {
+    alert("Ошибка: " + e.message);
+  }
+}
+
     async function submitOperation() {
       const amount = parseFloat(document.getElementById("amount").value);
       const category = document.getElementById("category").value.trim();
