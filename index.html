@@ -1,161 +1,235 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MyFinance</title>
-<style>
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  padding: 22px;
-  font-family: Arial, sans-serif;
-  background: #101820;
-  color: #ffffff;
-}
-h1 { margin-bottom: 6px; }
-.muted { color: #a9b5c0; }
-.balance {
-  background: #174735;
-  padding: 24px;
-  border-radius: 20px;
-  margin: 24px 0 16px;
-}
-.amount { font-size: 32px; font-weight: bold; margin: 12px 0; }
-.cards {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-.card {
-  background: #202c36;
-  padding: 16px;
-  border-radius: 16px;
-}
-.number { font-size: 20px; font-weight: bold; margin-top: 12px; }
-.section { margin-top: 26px; }
-input, select, button {
-  display: block;
-  width: 100%;
-  padding: 14px;
-  margin-top: 12px;
-  border: none;
-  border-radius: 12px;
-  font-size: 16px;
-}
-input, select { background: #202c36; color: white; }
-button {
-  background: #39c58b;
-  color: #10251b;
-  font-weight: bold;
-  cursor: pointer;
-}
-.operation {
-  padding: 12px 0;
-  border-bottom: 1px solid #35414a;
-}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MyFinance</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 16px;
+      min-height: 100vh;
+    }
+    h1 { font-size: 22px; margin-bottom: 16px; text-align: center; }
+    .card {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    .balance-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 16px;
+    }
+    .balance-row:last-child { margin-bottom: 0; }
+    .balance-total {
+      font-weight: bold;
+      font-size: 20px;
+      border-top: 1px solid #334155;
+      padding-top: 8px;
+      margin-top: 8px;
+    }
+    .income { color: #4ade80; }
+    .expense { color: #f87171; }
+    button {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      cursor: pointer;
+      color: #fff;
+    }
+    .btn-income { background: #16a34a; }
+    .btn-expense { background: #dc2626; }
+    .btn-refresh { background: #334155; }
+    input, select {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      background: #0f172a;
+      color: #e2e8f0;
+      font-size: 16px;
+    }
+    .operation {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #334155;
+      font-size: 14px;
+    }
+    .operation:last-child { border-bottom: none; }
+    .hidden { display: none; }
+    .error { color: #f87171; font-size: 14px; margin-top: 8px; text-align: center; }
+  </style>
 </head>
 <body>
-<h1>MyFinance 💰</h1>
-<div class="muted">Твои финансы в одном месте</div>
+  <h1>💰 MyFinance</h1>
 
-<div class="balance">
-  <div>Мой баланс</div>
-  <div class="amount" id="balance">0,00 ₽</div>
-  <div class="muted">Доходы минус расходы</div>
-</div>
-
-<div class="cards">
   <div class="card">
-    📈 Доходы
-    <div class="number" id="income">0,00 ₽</div>
+    <div class="balance-row">
+      <span>📈 Доходы</span>
+      <span class="income" id="income">—</span>
+    </div>
+    <div class="balance-row">
+      <span>📉 Расходы</span>
+      <span class="expense" id="expense">—</span>
+    </div>
+    <div class="balance-row balance-total">
+      <span>💵 Остаток</span>
+      <span id="balance">—</span>
+    </div>
   </div>
+
+  <button class="btn-income" onclick="showForm('income')">➕ Добавить доход</button>
+  <button class="btn-expense" onclick="showForm('expense')">➖ Добавить расход</button>
+
+  <div class="card hidden" id="form">
+    <input type="number" id="amount" placeholder="Сумма, например 250" step="0.01" />
+    <input type="text" id="category" placeholder="Категория, например еда" />
+    <button class="btn-income" id="submitBtn" onclick="submitOperation()">Сохранить</button>
+    <button class="btn-refresh" onclick="hideForm()">Отмена</button>
+    <div class="error hidden" id="error"></div>
+  </div>
+
+  <button class="btn-refresh" onclick="loadData()">🔄 Обновить</button>
+
   <div class="card">
-    📉 Расходы
-    <div class="number" id="expense">0,00 ₽</div>
+    <h3 style="margin-bottom: 10px; font-size: 16px;">📜 Последние операции</h3>
+    <div id="history">Загрузка...</div>
   </div>
-</div>
 
-<div class="section">
-  <h3>Добавить операцию</h3>
-  <select id="kind">
-    <option value="income">Доход</option>
-    <option value="expense">Расход</option>
-  </select>
-  <input id="amount" type="number" min="0.01" step="0.01"
-         placeholder="Сумма в рублях">
-  <input id="category" maxlength="50"
-         placeholder="Категория: например Еда">
-  <button id="save">Сохранить операцию</button>
-  <p class="muted" id="status"></p>
-</div>
+  <script>
+    // ⚠️ ЗАМЕНИ ЭТУ ССЫЛКУ НА СВОЮ ИЗ NGROK
+    const API_URL = "https://shrill-skewed-coleslaw.ngrok-free.dev";
 
-<div class="section">
-  <h3>Последние операции</h3>
-  <div id="history" class="muted">Операций пока нет</div>
-</div>
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+    }
 
-<script>
-let operations = [];
+    // Получаем user_id из Telegram WebApp
+    function getUserId() {
+      if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+        return tg.initDataUnsafe.user.id;
+      }
+      // Fallback для теста в браузере
+      return 5907608633;
+    }
 
-function money(n) {
-  return n.toLocaleString('ru-RU', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }) + ' ₽';
-}
+    const USER_ID = getUserId();
+    let currentKind = "income";
 
-function render() {
-  const income = operations
-    .filter(o => o.kind === 'income')
-    .reduce((sum, o) => sum + o.amount, 0);
+    const headers = {
+      "ngrok-skip-browser-warning": "true",
+      "Content-Type": "application/json",
+    };
 
-  const expense = operations
-    .filter(o => o.kind === 'expense')
-    .reduce((sum, o) => sum + o.amount, 0);
+    async function loadData() {
+      try {const [balRes, histRes] = await Promise.all([
+          fetch(`${API_URL}/balance?user_id=${USER_ID}`, { headers }),
+          fetch(`${API_URL}/history?user_id=${USER_ID}&limit=10`, { headers }),
+        ]);
 
-  document.getElementById('income').textContent = money(income);
-  document.getElementById('expense').textContent = money(expense);
-  document.getElementById('balance').textContent = money(income - expense);
+        const bal = await balRes.json();
+        const hist = await histRes.json();
 
-  const history = document.getElementById('history');
-  history.replaceChildren();
+        document.getElementById("income").textContent = bal.income.toFixed(2);
+        document.getElementById("expense").textContent = bal.expense.toFixed(2);
+        document.getElementById("balance").textContent = bal.balance.toFixed(2);
 
-  if (operations.length === 0) {
-    history.textContent = 'Операций пока нет';
-    return;
-  }
+        renderHistory(hist);
+      } catch (e) {
+        document.getElementById("history").innerHTML =
+          `<div class="error">Ошибка загрузки: ${e.message}</div>`;
+      }
+    }
 
-  operations.slice().reverse().slice(0, 10).forEach(o => {
-    const item = document.createElement('div');
-    item.className = 'operation';
-    item.textContent =
-      (o.kind === 'income' ? '+ ' : '− ') +
-      money(o.amount) + ' · ' + o.category;
-    history.appendChild(item);
-  });
-}
+    function renderHistory(items) {
+      const el = document.getElementById("history");
+      if (!items.length) {
+        el.innerHTML = "<div>Пока операций нет.</div>";
+        return;
+      }
+      el.innerHTML = items
+        .map((op) => {
+          const sign = op.kind === "income" ? "+" : "−";
+          const cls = op.kind === "income" ? "income" : "expense";
+          return `<div class="operation">
+            <span>${op.category}</span>
+            <span class="${cls}">${sign}${op.amount.toFixed(2)}</span>
+          </div>`;
+        })
+        .join("");
+    }
 
-document.getElementById('save').addEventListener('click', () => {
-  const amount = Number(document.getElementById('amount').value);
-  const category = document.getElementById('category').value.trim();
-  const kind = document.getElementById('kind').value;
-  const status = document.getElementById('status');
+    function showForm(kind) {
+      currentKind = kind;
+      document.getElementById("form").classList.remove("hidden");
+      document.getElementById("amount").value = "";
+      document.getElementById("category").value = "";
+      document.getElementById("error").classList.add("hidden");
 
-  if (!Number.isFinite(amount) || amount <= 0 || !category) {
-    status.textContent = 'Укажи сумму больше нуля и категорию.';
-    return;
-  }
+      const btn = document.getElementById("submitBtn");
+      btn.textContent = kind === "income" ? "Сохранить доход" : "Сохранить расход";
+      btn.className = kind === "income" ? "btn-income" : "btn-expense";
+    }
 
-  operations.push({ amount, category, kind });
-  document.getElementById('amount').value = '';
-  document.getElementById('category').value = '';
-  status.textContent = 'Операция добавлена!';
-  render();
-});
+    function hideForm() {
+      document.getElementById("form").classList.add("hidden");
+    }
 
-render();
-</script>
+    async function submitOperation() {
+      const amount = parseFloat(document.getElementById("amount").value);
+      const category = document.getElementById("category").value.trim();
+      const errEl = document.getElementById("error");
+
+      if (!amount || amount <= 0) {
+        errEl.textContent = "Введи корректную сумму.";
+        errEl.classList.remove("hidden");
+        return;
+      }
+      if (!category) {
+        errEl.textContent = "Введи категорию.";
+        errEl.classList.remove("hidden");
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_URL}/operation`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            user_id: USER_ID,
+            kind: currentKind,
+            amount,
+            category,
+          }),
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || "Ошибка");
+
+        hideForm();
+        loadData();
+        if (tg) tg.HapticFeedback?.notificationOccurred("success");
+      } catch (e) {
+        errEl.textContent = "Ошибка: " + e.message;
+        errEl.classList.remove("hidden");
+      }
+    }
+
+    loadData();
+  </script>
 </body>
 </html>
